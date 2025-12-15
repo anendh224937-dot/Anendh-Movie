@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import axios from 'axios';
-import { Container, Form, Button, Alert } from 'react-bootstrap';
+import { Container, Form, Button, Alert, Card } from 'react-bootstrap';
 
 const AddMovie = ({ onMovieAdded, onCancel }) => {
   const [formData, setFormData] = useState({
@@ -10,7 +10,7 @@ const AddMovie = ({ onMovieAdded, onCancel }) => {
     posterURL: ''
   });
 
-  const [loading, setLoading] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
@@ -24,105 +24,112 @@ const AddMovie = ({ onMovieAdded, onCancel }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true);
+    setSubmitting(true);
     setError('');
     setSuccess('');
 
     try {
-      // Validation
       if (!formData.title || !formData.genre || !formData.releaseYear || !formData.posterURL) {
-        setError('All fields are required');
-        setLoading(false);
+        setError('Please fill out all fields.');
+        setSubmitting(false);
         return;
       }
 
       const response = await axios.post('/api/movies', formData);
-      setSuccess('Movie added successfully!');
+      setSuccess('Movie successfully added to your collection!');
+      
+      // Clear form
       setFormData({
         title: '',
         genre: '',
         releaseYear: new Date().getFullYear(),
         posterURL: ''
       });
+
+      // Notify parent to refresh and switch view
       onMovieAdded(response.data.movie);
-      setTimeout(() => {
-        setSuccess('');
-      }, 3000);
+
+      setTimeout(() => setSuccess(''), 4000); // Hide success message after 4s
+
     } catch (err) {
-      setError(err.response?.data?.message || 'Error adding movie. Please try again.');
+      setError(err.response?.data?.message || 'Failed to add movie. Please try again.');
     } finally {
-      setLoading(false);
+      setSubmitting(false);
     }
   };
 
   return (
-    <Container className="my-5">
-      <div className="card p-4 shadow-sm">
-        <h2 className="mb-4">Add New Movie</h2>
+    <Container className="my-5" style={{ maxWidth: '700px' }}>
+      <Card className="p-4 p-md-5 shadow-lg border-0">
+        <h1 className="text-center mb-4">Add a New Movie</h1>
 
-        {error && <Alert variant="danger">{error}</Alert>}
+        {error && <Alert variant="danger" onClose={() => setError('')} dismissible>{error}</Alert>}
         {success && <Alert variant="success">{success}</Alert>}
 
         <Form onSubmit={handleSubmit}>
-          <Form.Group className="mb-3">
-            <Form.Label>Movie Title *</Form.Label>
+          <Form.Group className="mb-4">
+            <Form.Label>Movie Title</Form.Label>
             <Form.Control
               type="text"
               name="title"
               value={formData.title}
               onChange={handleChange}
-              placeholder="Enter movie title"
+              placeholder="e.g., The Matrix"
               required
+              size="lg"
             />
           </Form.Group>
 
-          <Form.Group className="mb-3">
-            <Form.Label>Genre *</Form.Label>
+          <Form.Group className="mb-4">
+            <Form.Label>Genre</Form.Label>
             <Form.Control
               type="text"
               name="genre"
               value={formData.genre}
               onChange={handleChange}
-              placeholder="e.g., Action, Drama, Comedy"
+              placeholder="e.g., Sci-Fi"
               required
+              size="lg"
             />
           </Form.Group>
 
-          <Form.Group className="mb-3">
-            <Form.Label>Release Year *</Form.Label>
+          <Form.Group className="mb-4">
+            <Form.Label>Release Year</Form.Label>
             <Form.Control
               type="number"
               name="releaseYear"
               value={formData.releaseYear}
               onChange={handleChange}
-              min="1900"
+              min="1888" // First movie ever made
               max={new Date().getFullYear()}
               required
+              size="lg"
             />
           </Form.Group>
 
-          <Form.Group className="mb-3">
-            <Form.Label>Poster Image URL *</Form.Label>
+          <Form.Group className="mb-4">
+            <Form.Label>Poster Image URL</Form.Label>
             <Form.Control
               type="url"
               name="posterURL"
               value={formData.posterURL}
               onChange={handleChange}
-              placeholder="https://example.com/poster.jpg"
+              placeholder="https://example.com/image.png"
               required
+              size="lg"
             />
           </Form.Group>
 
-          <div className="d-flex gap-2">
-            <Button variant="primary" type="submit" disabled={loading}>
-              {loading ? 'Adding...' : 'Add Movie'}
+          <div className="d-grid gap-3">
+            <Button variant="primary" type="submit" disabled={submitting} size="lg">
+              {submitting ? 'Adding Movie...' : 'Add to Collection'}
             </Button>
-            <Button variant="secondary" onClick={onCancel}>
-              Cancel
+            <Button variant="outline-secondary" onClick={onCancel} size="lg">
+              Back to List
             </Button>
           </div>
         </Form>
-      </div>
+      </Card>
     </Container>
   );
 };

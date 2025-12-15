@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Container, Form, Button, Alert } from 'react-bootstrap';
+import { Container, Form, Button, Alert, Spinner, Card } from 'react-bootstrap';
 
 const EditMovie = ({ movieId, onMovieUpdated, onCancel }) => {
   const [formData, setFormData] = useState({
@@ -19,8 +19,10 @@ const EditMovie = ({ movieId, onMovieUpdated, onCancel }) => {
   useEffect(() => {
     const fetchMovie = async () => {
       try {
-        const response = await axios.get(`/api/movies`);
-        const movie = response.data.movies.find(m => m._id === movieId);
+        setLoading(true);
+        const response = await axios.get(`/api/movies/${movieId}`);
+        const { movie } = response.data;
+
         if (movie) {
           setFormData({
             title: movie.title,
@@ -30,13 +32,15 @@ const EditMovie = ({ movieId, onMovieUpdated, onCancel }) => {
           });
         }
       } catch (err) {
-        setError('Error loading movie data');
+        setError('Error loading movie data. Please try again later.');
       } finally {
         setLoading(false);
       }
     };
 
-    fetchMovie();
+    if (movieId) {
+      fetchMovie();
+    }
   }, [movieId]);
 
   const handleChange = (e) => {
@@ -62,10 +66,13 @@ const EditMovie = ({ movieId, onMovieUpdated, onCancel }) => {
 
       const response = await axios.put(`/api/movies/${movieId}`, formData);
       setSuccess('Movie updated successfully!');
+      
       onMovieUpdated(response.data.movie);
+
       setTimeout(() => {
         setSuccess('');
       }, 3000);
+
     } catch (err) {
       setError(err.response?.data?.message || 'Error updating movie. Please try again.');
     } finally {
@@ -76,76 +83,81 @@ const EditMovie = ({ movieId, onMovieUpdated, onCancel }) => {
   if (loading) {
     return (
       <Container className="my-5 text-center">
-        <p>Loading movie details...</p>
+        <Spinner animation="border" />
+        <p className="mt-2">Loading movie details...</p>
       </Container>
     );
   }
 
   return (
-    <Container className="my-5">
-      <div className="card p-4 shadow-sm">
-        <h2 className="mb-4">Edit Movie</h2>
+    <Container className="my-5" style={{ maxWidth: '700px' }}>
+      <Card className="p-4 p-md-5 shadow-lg border-0">
+        <h1 className="text-center mb-4">Edit Movie Details</h1>
 
-        {error && <Alert variant="danger">{error}</Alert>}
+        {error && <Alert variant="danger" onClose={() => setError('')} dismissible>{error}</Alert>}
         {success && <Alert variant="success">{success}</Alert>}
 
         <Form onSubmit={handleSubmit}>
-          <Form.Group className="mb-3">
-            <Form.Label>Movie Title *</Form.Label>
+          <Form.Group className="mb-4">
+            <Form.Label>Movie Title</Form.Label>
             <Form.Control
               type="text"
               name="title"
               value={formData.title}
               onChange={handleChange}
               required
+              size="lg"
             />
           </Form.Group>
 
-          <Form.Group className="mb-3">
-            <Form.Label>Genre *</Form.Label>
+          <Form.Group className="mb-4">
+            <Form.Label>Genre</Form.Label>
             <Form.Control
               type="text"
               name="genre"
               value={formData.genre}
               onChange={handleChange}
               required
+              size="lg"
             />
           </Form.Group>
 
-          <Form.Group className="mb-3">
-            <Form.Label>Release Year *</Form.Label>
+          <Form.Group className="mb-4">
+            <Form.Label>Release Year</Form.Label>
             <Form.Control
               type="number"
               name="releaseYear"
               value={formData.releaseYear}
               onChange={handleChange}
-              min="1900"
+              min="1888"
               max={new Date().getFullYear()}
               required
+              size="lg"
             />
           </Form.Group>
 
-          <Form.Group className="mb-3">
-            <Form.Label>Poster Image URL *</Form.Label>
+          <Form.Group className="mb-4">
+            <Form.Label>Poster Image URL</Form.Label>
             <Form.Control
               type="url"
               name="posterURL"
               value={formData.posterURL}
               onChange={handleChange}
               required
+              size="lg"
             />
           </Form.Group>
 
-          <div className="d-flex gap-2">
-            <Button variant="primary" type="submit" disabled={saving}>
-              {saving ? 'Saving...' : 'Save Changes'}
+          <div className="d-grid gap-3">
+            <Button variant="primary" type="submit" disabled={saving} size="lg">
+              {saving ? 'Saving Changes...' : 'Save Changes'}
             </Button>
-            <Button variant="secondary" onClick={onCancel}>
+            <Button variant="outline-secondary" onClick={onCancel} size="lg">
               Cancel
             </Button>
           </div>
         </Form>
-      </div>
+      </Card>
     </Container>
   );
 };
